@@ -28,6 +28,7 @@
 ;;; Code:
 (require 'tzc)
 (require 'org-element)
+(require 'transient)
 
 (defcustom tzc-org-local-timezone (format-time-string "%z" (current-time))
   "Default local timezone or offset to use when converting org timestamp."
@@ -109,7 +110,8 @@ Optional argument ARG."
 
 (transient-define-prefix tzc-org-timestamp-dispatch ()
   "TZC operations for Org timestamp at point."
-  ["TZC timestamp operation"
+  [:description
+   (lambda () (format "TZC: %s" (nth 0 (tzc--get-timestamp-at-point))))
 
    ["Convert"
     ("c" "Convert (keep original)" tzc-convert-org-time-stamp-at-mark)
