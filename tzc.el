@@ -347,7 +347,7 @@ Optionally check validity of the timezone using CHECK-TIME-ZONE."
          (tz-regexp (tzc--timestamp-time-zone-regexp))
 	 (tz-plist (when (string-match
 			  (concat
-			   "[0-9]\\{2\\}:[0-9]\\{2\\}"  ;; anchor: must appear after time
+			   "[0-9]\\{1,2\\}:[0-9]\\{2\\}"  ;; anchor: must appear after time
 			   "[[:space:]]+"
 			   tz-regexp)
 			  timestamp)
