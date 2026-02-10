@@ -96,6 +96,35 @@ Optional argument ARG."
   (interactive "P")
   (tzc-org--schedule-or-deadline "DEADLINE"))
 
+;;;world clock for time at point
+(defun tzc-world-clock-for-org-timestamp-at-point ()
+  (interactive)
+  ;;; remove existing world clock
+  (when (get-buffer tzc-world-clock-buffer-name)
+    (kill-buffer tzc-world-clock-buffer-name))
+  (let* ((timestamp (nth 0 (tzc--get-timestamp-at-point))))
+    (tzc-world-clock (org-time-string-to-time timestamp)
+		     (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))))
+
+(transient-define-prefix tzc-org-timestamp-dispatch ()
+  "TZC operations for Org timestamp at point."
+  [;;;:description tzc-org--timestamp-summary
+
+   ["Convert"
+    ("c" "Convert (keep original)" tzc-convert-org-time-stamp-at-mark)
+    ("r" "Convert (replace)" tzc-convert-and-replace-org-time-stamp-at-mark)]
+
+   ["Timezone"
+    ("u" "Add/Update timezone" tzc-add-or-update-time-zone-in-time-stamp-at-point)]
+
+   ["Inspect"
+    ("w" "View in world clock" tzc-world-clock-for-org-timestamp-at-point)]
+
+   ["Quit"
+    ("q" "Quit" transient-quit-one)]])
+
+(define-key org-mode-map (kbd "C-c t") #'tzc-org-timestamp-dispatch)
+
 (provide 'tzc-org)
 ;;; tzc-org.el ends here
 

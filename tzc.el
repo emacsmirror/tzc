@@ -339,9 +339,12 @@ Use Area/City (e.g. Europe/London) or an offset such as UTC+0530 or GMT-0400!"))
    "[-+][0-9]\\{1,2\\}\\(?::?[0-9]\\{1,2\\}\\)?"
    "\\)"))
 
-(cl-defun tzc--get-time-zone-from-time-stamp (timestamp &optional (check-time-zone t))
+(cl-defun tzc--get-time-zone-from-time-stamp (timestamp
+					      &optional (check-time-zone t)
+					      ask-for-tz-when-nil)
   "Return plist (:tz STRING :beg POS :end POS) if timezone exists in TIMESTAMP.
-Optionally check validity of the timezone using CHECK-TIME-ZONE."
+Optionally check validity of the timezone using CHECK-TIME-ZONE.
+Optionally ask for time zone when not found using ASK-FOR-TZ-WHEN-NIL."
   (let* ((case-fold-search nil)
          ;; Only valid timezone tokens
          (tz-regexp (tzc--timestamp-time-zone-regexp))
@@ -355,6 +358,8 @@ Optionally check validity of the timezone using CHECK-TIME-ZONE."
 			   :beg (match-beginning 1)
 			   :end (match-end 1))))
 	 (tz (plist-get tz-plist :tz)))
+    (when (and (null tz) ask-for-tz-when-nil)
+      (setq tz (completing-read "No time zone found! Enter a time zone to convert from: " tzc-time-zones)))
     (when check-time-zone
       (setq tz (cond ((string-match-p "\\`[A-Za-z]+/[A-Za-z_]+\\'" tz)
 		      (if (member tz tzc-time-zones)
@@ -535,7 +540,7 @@ See `tzc-world-clock'."
     map))
 
 ;;;###autoload
-(defun tzc-world-clock ()
+(defun tzc-world-clock (&optional from-time from-zone from-date)
   "Display a world clock buffer for time zones in `tzc-favourite-time-zones-alist`."
   (interactive)
   (if-let ((buffer (get-buffer tzc-world-clock-buffer-name)))
@@ -543,7 +548,16 @@ See `tzc-world-clock'."
     (pop-to-buffer tzc-world-clock-buffer-name)
     (dolist (to-zone (tzc--favourite-time-zones))
       (unless (string-equal to-zone nil)
-	(insert (propertize (tzc--get-time-zone-label to-zone) 'face 'tzc-face-time-zone-label) " " (tzc--get-converted-time-string (format-time-string "%R") nil to-zone tzc-use-date-in-world-clock tzc-use-offset-in-world-clock) "\n")))
+	(insert (propertize (tzc--get-time-zone-label to-zone) 'face 'tzc-face-time-zone-label)
+		" "
+		(tzc--get-converted-time-string
+		 (format-time-string "%R" from-time)
+		 from-zone
+		 to-zone
+		 tzc-use-date-in-world-clock
+		 tzc-use-offset-in-world-clock
+		 from-date)
+		"\n")))
     (align-regexp (point-min) (point-max) "\\(\\s-*\\) "))
   (tzc-world-clock-mode))
 
@@ -566,7 +580,7 @@ See `tzc-world-clock'."
    (list
     (read-string "Enter timestamp to convert: ")
     (completing-read "Enter To Zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
-  (let* ((from-zone-exists-p (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))
+  (let* ((from-zone-exists-p (plist-get (tzc--get-time-zone-from-time-stamp timestamp t t) :tz))
 	 (from-zone (if from-zone-exists-p
 			from-zone-exists-p
 		      (completing-read "No Time Zone info found in the time stamp. Enter Time Zone of the current time stamp in Area/City format:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
