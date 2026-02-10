@@ -541,7 +541,10 @@ See `tzc-world-clock'."
 
 ;;;###autoload
 (defun tzc-world-clock (&optional from-time from-zone from-date)
-  "Display a world clock buffer for time zones in `tzc-favourite-time-zones-alist`."
+  "Display a world clock buffer for time zones in `tzc-favourite-time-zones-alist`.
+Optional argument FROM-TIME to convert time from.
+Optional argument FROM-ZONE to convert time to.
+Optional argument FROM-DATE to convert date from."
   (interactive)
   (if-let ((buffer (get-buffer tzc-world-clock-buffer-name)))
       (pop-to-buffer buffer)
@@ -617,7 +620,7 @@ See `tzc-world-clock'."
    (let* ((timestamp (or (car (tzc--get-timestamp-at-point))
                          (error "No org timestamp found at point!")))
 	  (prompt (format "Convert %s to time zone: " timestamp))
-	  (zones (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))))     
+	  (zones (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))))
      (list (completing-read prompt zones))))
   (let ((timestamp (car (tzc--get-timestamp-at-point))))
     (tzc-convert-org-time-stamp timestamp to-zone)))

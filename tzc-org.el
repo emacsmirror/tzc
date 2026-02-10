@@ -35,21 +35,21 @@
   :type 'string
   :group 'tzc)
 
-(defun tzc-org--get-planning-ts (schedule/deadline)
-  "Get the timestamp for SCHEDULE/DEADLINE.
+(defun tzc-org--get-planning-ts (schedule-or-deadline)
+  "Get the timestamp for SCHEDULE-OR-DEADLINE.
 Return org timestamp as (STRING BEGIN END)."
   (let* ((ctx (org-element-context))
-         (ts (org-element-property schedule/deadline ctx)))
+         (ts (org-element-property schedule-or-deadline ctx)))
     (list
      (org-element-property :raw-value ts)
      (org-element-property :begin ts)
      (org-element-property :end ts))))
 
-(defun tzc-org--schedule-or-deadline (schedule/deadline)
-  "SCHEDULE/DEADLINE with timezone conversion on the fly.
-SCHEDULE/DEADLINE can be `SCHEDULED' or `DEADLINE'."
+(defun tzc-org--schedule-or-deadline (schedule-or-deadline)
+  "SCHEDULE-OR-DEADLINE with timezone conversion on the fly.
+SCHEDULE-OR-DEADLINE can be `SCHEDULED' or `DEADLINE'."
   ;; Get date and time using org-read-date (which returns both date and time)
-  (let* ((from-datetime (org-read-date nil t nil (format "Enter %s date and time: " schedule/deadline)))
+  (let* ((from-datetime (org-read-date nil t nil (format "Enter %s date and time: " schedule-or-deadline)))
 	 ;; Parse the datetime to get all components
 	 (org-time-stamp (format-time-string "<%F %a %R>" from-datetime))
 	 ;; Get from-zone
@@ -67,8 +67,8 @@ SCHEDULE/DEADLINE can be `SCHEDULED' or `DEADLINE'."
 	 (converted-time-stamp (tzc-convert-org-time-stamp org-time-stamp-with-zoneinfo to-zone))
 	 (ts))
     
-    (setq ts (cond ((string-equal schedule/deadline "SCHEDULED") (tzc-org--get-planning-ts :scheduled))
-		   ((string-equal schedule/deadline "DEADLINE") (tzc-org--get-planning-ts :deadline))))
+    (setq ts (cond ((string-equal schedule-or-deadline "SCHEDULED") (tzc-org--get-planning-ts :scheduled))
+		   ((string-equal schedule-or-deadline "DEADLINE") (tzc-org--get-planning-ts :deadline))))
     (if (nth 0 ts)
 	(progn
 	  (goto-char (nth 1 ts))
@@ -76,30 +76,31 @@ SCHEDULE/DEADLINE can be `SCHEDULED' or `DEADLINE'."
 	  (insert converted-time-stamp " "))
       (org-back-to-heading t)
       (forward-line 1)
-      (insert (format "%s: " schedule/deadline) converted-time-stamp " "))))
+      (insert (format "%s: " schedule-or-deadline) converted-time-stamp " "))))
 
 ;;;###autoload
-(defun tzc-org-schedule (&optional arg)
+(defun tzc-org-schedule ()
   "Schedule an org item with timezone conversion.
 Similar to `org-schedule', but prompts for timezone conversion.
 Prompts for date and time first, then asks for from-zone and to-zone,
 converts the time, and inserts the result with the to-zone in the timestamp.
 Optional argument ARG."
-  (interactive "P")
+  (interactive)
   (tzc-org--schedule-or-deadline "SCHEDULED"))
 
 ;;;###autoload
-(defun tzc-org-deadline (&optional arg)
+(defun tzc-org-deadline ()
   "Schedule an org item with timezone conversion.
 Similar to `org-deadline', but prompts for timezone conversion.
 Prompts for date and time first, then asks for from-zone and to-zone,
 converts the time, and inserts the result with the to-zone in the timestamp.
 Optional argument ARG."
-  (interactive "P")
+  (interactive)
   (tzc-org--schedule-or-deadline "DEADLINE"))
 
 ;;;world clock for time at point
 (defun tzc-world-clock-for-org-timestamp-at-point ()
+"Get a `world-clock' for the timestamp at point."
   (interactive)
   ;;; remove existing world clock
   (when (get-buffer tzc-world-clock-buffer-name)
@@ -130,7 +131,16 @@ Optional argument ARG."
    ["Quit"
     ("q" "Quit" transient-quit-one)]])
 
-(define-key org-mode-map (kbd "C-c t") #'tzc-org-timestamp-dispatch)
+(defvar tzc-org-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c t") #'tzc-org-timestamp-dispatch)
+    map)
+  "Keymap for `tzc-org-mode'.")
+
+(define-minor-mode tzc-org-mode
+  "Minor mode for TZC org features."
+  :lighter " TZC"
+  :keymap tzc-org-mode-map)
 
 (provide 'tzc-org)
 ;;; tzc-org.el ends here
