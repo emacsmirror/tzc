@@ -56,7 +56,8 @@ SCHEDULE/DEADLINE can be `SCHEDULED' or `DEADLINE'."
 				     (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))
 				     nil t nil nil tzc-org-local-timezone))
 	 ;; Get to-zone
-	 (to-zone (completing-read (format "Convert to timezone or UTC offset (default %s): " tzc-org-local-timezone)
+	 (to-zone (completing-read (format "Convert %s from %s to timezone or UTC offset (default %s): "
+					   org-time-stamp from-zone tzc-org-local-timezone)
 				     (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))
 				     nil t nil nil tzc-org-local-timezone))
 	 ;; Add zoneinfo to the time-stamp
@@ -108,17 +109,21 @@ Optional argument ARG."
 
 (transient-define-prefix tzc-org-timestamp-dispatch ()
   "TZC operations for Org timestamp at point."
-  [;;;:description tzc-org--timestamp-summary
+  ["TZC timestamp operation"
 
    ["Convert"
     ("c" "Convert (keep original)" tzc-convert-org-time-stamp-at-mark)
     ("r" "Convert (replace)" tzc-convert-and-replace-org-time-stamp-at-mark)]
 
    ["Timezone"
-    ("u" "Add/Update timezone" tzc-add-or-update-time-zone-in-time-stamp-at-point)]
+    ("m" "modify (add or update) timezone" tzc-add-or-update-time-zone-in-time-stamp-at-point)]
+
+   ["Schedule"
+    ("s" "Schedule" tzc-org-schedule)
+    ("d" "Deadline" tzc-org-deadline)]
 
    ["Inspect"
-    ("w" "View in world clock" tzc-world-clock-for-org-timestamp-at-point)]
+    ("v" "View in world clock" tzc-world-clock-for-org-timestamp-at-point)]
 
    ["Quit"
     ("q" "Quit" transient-quit-one)]])

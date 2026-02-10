@@ -577,9 +577,9 @@ See `tzc-world-clock'."
 (defun tzc-convert-org-time-stamp (timestamp to-zone)
   "Convert TIMESTAMP to TO-ZONE."
   (interactive
-   (list
-    (read-string "Enter timestamp to convert: ")
-    (completing-read "Enter To Zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
+   (let* ((timestamp (read-string "Enter timestamp to convert: "))
+	  (to-zone (completing-read (format "Convert %s to time zone:  " timestamp) (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
+     (list timestamp to-zone)))
   (let* ((from-zone-exists-p (plist-get (tzc--get-time-zone-from-time-stamp timestamp t t) :tz))
 	 (from-zone (if from-zone-exists-p
 			from-zone-exists-p
@@ -614,7 +614,7 @@ See `tzc-world-clock'."
 (defun tzc-convert-org-time-stamp-at-mark (to-zone)
   "Convert `org-time-stamp` at point to TO-ZONE."
   (interactive
-   (list (completing-read "Enter To Zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
+   (list (completing-read "Convert current timestamp to time zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
   (let* ((timestamp (or (nth 0 (tzc--get-timestamp-at-point))
                         (error "No org timestamp found at point!"))))
     (tzc-convert-org-time-stamp timestamp to-zone)))
@@ -623,7 +623,7 @@ See `tzc-world-clock'."
 (defun tzc-convert-and-replace-org-time-stamp-at-mark (to-zone)
   "Convert `org-time-stamp` at point to TO-ZONE and replace it."
   (interactive
-   (list (completing-read "Enter To Zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
+   (list (completing-read "Convert and replace current timestamp to:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
   (let* ((timestamp-details (tzc--get-timestamp-at-point))
 	 (timestamp)
 	 (beg)
