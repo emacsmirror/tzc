@@ -47,7 +47,7 @@ Return org timestamp as (STRING BEGIN END)."
 
 (defun tzc-org--schedule-or-deadline (schedule-or-deadline)
   "SCHEDULE-OR-DEADLINE with timezone conversion on the fly.
-SCHEDULE-OR-DEADLINE can be `SCHEDULED' or `DEADLINE'."
+SCHEDULE-OR-DEADLINE can be SCHEDULED or DEADLINE."
   ;; Get date and time using org-read-date (which returns both date and time)
   (let* ((from-datetime (org-read-date nil t nil (format "Enter %s date and time: " schedule-or-deadline)))
 	 ;; Parse the datetime to get all components
@@ -133,7 +133,7 @@ Optional argument ARG."
 
 (defvar tzc-org-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c t") #'tzc-org-timestamp-dispatch)
+    (define-key map (kbd "C-c C-x z") #'tzc-org-timestamp-dispatch)
     map)
   "Keymap for `tzc-org-mode'.")
 

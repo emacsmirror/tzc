@@ -144,6 +144,11 @@
   :type '(repeat string)
   :group 'tzc)
 
+(defcustom tzc-world-clock-buffer-name "*tzc-wclock*"
+  "Name of the `tzc-world-clock' buffer."
+  :type 'string
+  :group 'tzc)
+
 (defun tzc--get-time-zone-label (time-zone)
   "Get the label for the TIME-ZONE."
   (cond
@@ -158,11 +163,6 @@
       (user-error "%s is not a recognized timezone.  Perhaps looking for %s!" time-zone
 		  (tzc--closest-string time-zone tzc-time-zones))))
    (t time-zone)))
-
-(defcustom tzc-world-clock-buffer-name "*tzc-wclock*"
-  "Name of the `tzc-world-clock' buffer."
-  :type 'string
-  :group 'tzc)
 
 (defun tzc--+-position (timeshift)
   "Position of +- in a TIMESHIFT string."
@@ -448,6 +448,27 @@ erroneous calculation.  Please use correct format for time!")
 	  (t (setq from-zone (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))))
     (tzc-convert-time (format "%02d:%02d" hour minute) from-zone to-zone (format "%04d-%02d-%02d" year month day))))
 
+(defun tzc--time-zone-annotation-function-for-time-stamp (time-zone timestamp)
+  "Annotate time-zone TIME-ZONE for given TIMESTAMP.
+TIMESTAMP is converted to TIME-ZONE."
+  (let* ((timestamp (if (stringp timestamp)
+			timestamp
+		      (car timestamp)))
+         (converted-timestamp (tzc-convert-org-time-stamp timestamp time-zone)))
+    (format "%s %s %s"
+	    (propertize " " 'display `(space :align-to 30))
+	    (propertize "→" 'face 'tzc-face-time-zone-label)
+	    (propertize converted-timestamp 'face 'font-lock-keyword-face))))
+
+(defun tzc--select-time-zone-with-preview-for-time-stamp (timestamp)
+  "Prompt for a time-zone for TIMESTAMP with a live timestamp preview in the minibuffer."
+  (interactive)
+  (let* ((timezones (tzc--get-time-zones))
+         (completion-extra-properties 
+          (list :annotation-function (lambda (tz)
+				       (tzc--time-zone-annotation-function-for-time-stamp tz timestamp)))))
+    (completing-read "Select timezone: " timezones)))
+
 (defun tzc-convert-and-replace-time-at-mark (to-zone)
   "Convert time at point to TO-ZONE and replace it."
   (interactive
@@ -618,10 +639,8 @@ Optional argument FROM-DATE to convert date from."
   "Convert `org-time-stamp` at point to TO-ZONE."
   (interactive
    (let* ((timestamp (or (car (tzc--get-timestamp-at-point))
-                         (error "No org timestamp found at point!")))
-	  (prompt (format "Convert %s to time zone: " timestamp))
-	  (zones (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))))
-     (list (completing-read prompt zones))))
+                         (error "No org timestamp found at point!"))))
+     (list (tzc--select-time-zone-with-preview-for-time-stamp timestamp))))
   (let ((timestamp (car (tzc--get-timestamp-at-point))))
     (tzc-convert-org-time-stamp timestamp to-zone)))
 
@@ -630,10 +649,8 @@ Optional argument FROM-DATE to convert date from."
   "Convert `org-time-stamp` at point to TO-ZONE and replace it."
   (interactive
    (let* ((timestamp (or (car (tzc--get-timestamp-at-point))
-                         (error "No org timestamp found at point!")))
-	  (prompt (format "Convert %s to time zone: " timestamp))
-	  (zones (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))))
-     (list (completing-read prompt zones))))
+                         (error "No org timestamp found at point!"))))
+     (list (tzc--select-time-zone-with-preview-for-time-stamp timestamp))))
   (let* ((timestamp-details (tzc--get-timestamp-at-point))
 	 (timestamp)
 	 (beg)
