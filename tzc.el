@@ -325,26 +325,71 @@ The conversion is computed for the given FROM-DATE."
  "Invalid timezone format.
 Use Area/City (e.g. Europe/London) or an offset such as UTC+0530 or GMT-0400!"))
 
-(defun tzc--extract-timezone (timestamp)
-  "Return timezone token from Org TIMESTAMP, or nil."
-  (when (string-match "\\s-+\\([^ >]+\\)>\\'" timestamp)
-    (match-string 1 timestamp)))
+(defun tzc--timestamp-time-zone-regexp ()
+  "Regexp matching tzdata names or numeric offsets, including UT."
+  (concat
+   "\\("
+   ;; tzdata name
+   "[A-Za-z]+/[A-Za-z0-9_+\\-]+"
+   "\\|"
+   ;; UT / UTC / GMT / GM prefix with offset
+   "\\(?:UTC\\|UT\\|GMT\\|GM\\)[-+][0-9]\\{1,2\\}\\(?::?[0-9]\\{1,2\\}\\)?"
+   "\\|"
+   ;; Raw offset (+HHMM, +HHM, +HH)
+   "[-+][0-9]\\{1,2\\}\\(?::?[0-9]\\{1,2\\}\\)?"
+   "\\)"))
 
-(defun tzc--get-zoneinfo-from-time-stamp (timestamp)
-  "Get the zoneinfo from TIMESTAMP."
-  (let ((tz (tzc--extract-timezone timestamp)))
-    (cond
-     ((null tz) nil)
-     ((string-match-p "\\`[A-Za-z]+/[A-Za-z_]+\\'" tz)
-      (if (member tz tzc-time-zones)
-          tz
-        (user-error "%s is not a valid timezone.  Perhaps looking for %s?"
-                    tz (tzc--closest-string tz tzc-time-zones))))
-     ((string-match-p "\\`\\(?:[A-Z]+\\)?[-+][0-9]\\{2,4\\}\\'" tz)
-      tz)
-     ((string-match-p "\\`[A-Z]\\{2,5\\}\\'" tz)
-      (tzc--time-zone-format-error))
-     (t (tzc--time-zone-format-error)))))
+(cl-defun tzc--get-time-zone-from-time-stamp (timestamp &optional (check-time-zone t))
+  "Return plist (:tz STRING :beg POS :end POS) if timezone exists in TIMESTAMP.
+Optionally check validity of the timezone using CHECK-TIME-ZONE."
+  (let* ((case-fold-search nil)
+         ;; Only valid timezone tokens
+         (tz-regexp (tzc--timestamp-time-zone-regexp))
+	 (tz-plist (when (string-match
+			  (concat
+			   "[0-9]\\{1,2\\}:[0-9]\\{2\\}"  ;; anchor: must appear after time
+			   "[[:space:]]+"
+			   tz-regexp)
+			  timestamp)
+		     (list :tz  (match-string 1 timestamp)
+			   :beg (match-beginning 1)
+			   :end (match-end 1))))
+	 (tz (plist-get tz-plist :tz)))
+    (when check-time-zone
+      (setq tz (cond ((string-match-p "\\`[A-Za-z]+/[A-Za-z_]+\\'" tz)
+		      (if (member tz tzc-time-zones)
+			  tz
+			(let* ((closest-tz (tzc--closest-string tz tzc-time-zones)))
+			  (completing-read (format "%s is not a valid timezone.  Perhaps looking for %s?"
+						   tz closest-tz)
+					   tzc-time-zones nil t nil nil closest-tz))))
+		     (t tz)))
+      (setq tz-plist (plist-put tz-plist :tz tz)))
+    tz-plist))
+
+;;;###autoload
+(defun tzc-add-or-update-time-zone-in-time-stamp-at-point (time-zone)
+  "Add or update TIME-ZONE info for a time stamp at point."
+  (interactive (list (completing-read "Enter time zone to add: " tzc-time-zones)))
+  (let* ((ts-list (tzc--get-timestamp-at-point))
+         (ts (nth 0 ts-list))
+         (ts-begin (nth 1 ts-list))
+         (ts-end (nth 2 ts-list))
+         (tz-plist (tzc--get-time-zone-from-time-stamp ts nil)))
+    (if-let* ((tz (plist-get tz-plist :tz))
+              (rel-beg (plist-get tz-plist :beg))
+              (rel-end (plist-get tz-plist :end))
+              (tz-begin (+ ts-begin rel-beg))
+              (tz-end (+ ts-begin rel-end)))
+        ;; If timezone exists → replace it
+        (progn
+          (delete-region tz-begin tz-end)
+          (goto-char tz-begin)
+          (insert time-zone))
+      ;; Else → append new timezone before closing bracket
+      (goto-char ts-end)
+      (backward-char)
+      (insert " " time-zone))))
 
 (defun tzc--get-timestamp-at-point ()
   "Return Org timestamp at point as (STRING BEGIN END)."
@@ -353,7 +398,6 @@ Use Area/City (e.g. Europe/London) or an offset such as UTC+0530 or GMT-0400!"))
          ts)
     ;; Case 1: real timestamp element
     (setq ts (org-element-lineage ctx '(timestamp) t))
-
     ;; Case 2: planning timestamps — choose by point location
     (when (and (null ts)
                (eq (org-element-type ctx) 'planning))
@@ -396,7 +440,7 @@ erroneous calculation.  Please use correct format for time!")
       (setq year (decoded-time-year parsed-list))
     (cond ((tzc--+-p timestamp)
 	   (setq from-zone (tzc--format-time-shift timestamp)))
-	  (t (setq from-zone (tzc--get-zoneinfo-from-time-stamp timestamp))))
+	  (t (setq from-zone (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))))
     (tzc-convert-time (format "%02d:%02d" hour minute) from-zone to-zone (format "%04d-%02d-%02d" year month day))))
 
 (defun tzc-convert-and-replace-time-at-mark (to-zone)
@@ -522,7 +566,7 @@ See `tzc-world-clock'."
    (list
     (read-string "Enter timestamp to convert: ")
     (completing-read "Enter To Zone:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
-  (let* ((from-zone-exists-p (tzc--get-zoneinfo-from-time-stamp timestamp))
+  (let* ((from-zone-exists-p (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))
 	 (from-zone (if from-zone-exists-p
 			from-zone-exists-p
 		      (completing-read "No Time Zone info found in the time stamp. Enter Time Zone of the current time stamp in Area/City format:  " (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones))))))
