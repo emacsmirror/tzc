@@ -106,6 +106,12 @@
   :type '(repeat (list string string))
   :group 'tzc)
 
+(defcustom tzc-home-time-zone (car (car tzc-favourite-time-zones-alist))
+  "Home time zone to use as default when no time zone provided.
+Can be also used to highlight it in the tzc-world-clock."
+  :type 'string
+  :group 'tzc)
+
 (defun tzc--favourite-time-zones ()
   "Get the list of favourite time zones."
   (mapcar #'car tzc-favourite-time-zones-alist))
@@ -668,7 +674,7 @@ Optional argument FROM-DATE to convert date from."
                          (error "No org timestamp found at point!")))
 	  (tz-plist (tzc--get-time-zone-from-timestamp timestamp nil)))
      (when (null tz-plist)
-       (setq timestamp (string-replace ">" (concat (format-time-string " %z") ">") timestamp)))
+       (setq timestamp (string-replace ">" (concat " " tzc-home-time-zone ">") timestamp)))
      (list (tzc--select-time-zone-with-preview-for-timestamp
 	    timestamp
 	    (format "Convert current timestamp %s to time zone: " timestamp)))))
