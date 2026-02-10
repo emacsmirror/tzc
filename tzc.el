@@ -461,10 +461,10 @@ TIMESTAMP is converted to TIME-ZONE."
 	    (propertize converted-timestamp 'face 'font-lock-keyword-face))))
 
 (defun tzc--select-time-zone-with-preview-for-time-stamp (timestamp)
-  "Prompt for a time-zone for TIMESTAMP with a live timestamp preview in the minibuffer."
+  "Prompt for a time-zone for TIMESTAMP with converted timestamps."
   (interactive)
   (let* ((timezones (tzc--get-time-zones))
-         (completion-extra-properties 
+         (completion-extra-properties
           (list :annotation-function (lambda (tz)
 				       (tzc--time-zone-annotation-function-for-time-stamp tz timestamp)))))
     (completing-read "Select timezone: " timezones)))
