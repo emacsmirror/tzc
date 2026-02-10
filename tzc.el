@@ -372,10 +372,27 @@ Optionally ask for time zone when not found using ASK-FOR-TZ-WHEN-NIL."
       (setq tz-plist (plist-put tz-plist :tz tz)))
     tz-plist))
 
+(defun tzc--time-zone-annotation-function (time-zone)
+  "Annotate time-zone TIME-ZONE with offset preview."
+  (format "%s %s %s%s"
+	  (propertize " " 'display `(space :align-to 30))
+	  (propertize "→" 'face 'tzc-face-time-zone-label)
+	  (propertize "UTC" 'face 'tzc-face-time-zone-label)
+	  (propertize (tzc--get-offset time-zone) 'face 'tzc-face-offset-string)))
+
+(defun tzc--select-time-zone-with-preview-for-offset ()
+  "Prompt for a time-zone with offset preview."
+  (interactive)
+  (let* ((timezones (tzc--get-time-zones))
+         (completion-extra-properties
+          (list :annotation-function (lambda (tz)
+				       (tzc--time-zone-annotation-function tz)))))
+    (completing-read "Select timezone: " timezones)))
+
 ;;;###autoload
 (defun tzc-add-or-update-time-zone-in-time-stamp-at-point (time-zone)
   "Add or update TIME-ZONE info for a time stamp at point."
-  (interactive (list (completing-read "Enter time zone to add: " tzc-time-zones)))
+  (interactive (list (tzc--select-time-zone-with-preview-for-offset)))
   (let* ((ts-list (tzc--get-timestamp-at-point))
          (ts (nth 0 ts-list))
          (ts-begin (nth 1 ts-list))
