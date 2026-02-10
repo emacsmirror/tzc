@@ -4,7 +4,7 @@
 
 ;; Author: Md Arif Shaikh <arifshaikh.astro@gmail.com>
 ;; Homepage: https://github.com/md-arif-shaikh/tzc
-;; Keywords: convenience, timezone, org
+;; Keywords: convenience, time zone, org
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,17 +21,17 @@
 
 ;;; Commentary:
 
-;; Integration between tzc (timezone converter) and Org mode.
-;; Provides `tzc-org-schedule' for scheduling org items with timezone conversion.
-;; Provides `tzc-org-deadline' for scheduling org items with timezone conversion.
+;; Integration between tzc (time zone converter) and Org mode.
+;; Provides `tzc-org-schedule' for scheduling org items with time zone conversion.
+;; Provides `tzc-org-deadline' for scheduling org items with time zone conversion.
 
 ;;; Code:
 (require 'tzc)
 (require 'org-element)
 (require 'transient)
 
-(defcustom tzc-org-local-timezone (format-time-string "%z" (current-time))
-  "Default local timezone or offset to use when converting org timestamp."
+(defcustom tzc-org-local-time-zone (format-time-string "%z" (current-time))
+  "Default local time zone or offset to use when converting org timestamp."
   :type 'string
   :group 'tzc)
 
@@ -46,25 +46,25 @@ Return org timestamp as (STRING BEGIN END)."
      (org-element-property :end ts))))
 
 (defun tzc-org--schedule-or-deadline (schedule-or-deadline)
-  "SCHEDULE-OR-DEADLINE with timezone conversion on the fly.
+  "SCHEDULE-OR-DEADLINE with time zone conversion on the fly.
 SCHEDULE-OR-DEADLINE can be SCHEDULED or DEADLINE."
   ;; Get date and time using org-read-date (which returns both date and time)
   (let* ((from-datetime (org-read-date nil t nil (format "Enter %s date and time: " schedule-or-deadline)))
 	 ;; Parse the datetime to get all components
-	 (org-time-stamp (format-time-string "<%F %a %R>" from-datetime))
+	 (org-timestamp (format-time-string "<%F %a %R>" from-datetime))
 	 ;; Get from-zone
-	 (from-zone (completing-read (format "Enter a timezone or UTC offset (default %s): " tzc-org-local-timezone)
+	 (from-zone (completing-read (format "Enter a time zone or UTC offset (default %s): " tzc-org-local-time-zone)
 				     (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))
-				     nil t nil nil tzc-org-local-timezone))
+				     nil t nil nil tzc-org-local-time-zone))
 	 ;; Get to-zone
-	 (to-zone (completing-read (format "Convert %s from %s to timezone or UTC offset (default %s): "
-					   org-time-stamp from-zone tzc-org-local-timezone)
+	 (to-zone (completing-read (format "Convert %s from %s to time zone or UTC offset (default %s): "
+					   org-timestamp from-zone tzc-org-local-time-zone)
 				     (delete-dups (append (tzc--favourite-time-zones) (tzc--get-time-zones)))
-				     nil t nil nil tzc-org-local-timezone))
-	 ;; Add zoneinfo to the time-stamp
-	 (org-time-stamp-with-zoneinfo (concat (string-replace ">" (concat " " from-zone) org-time-stamp) ">"))
-	 ;; Convert the time-stamp using tzc
-	 (converted-time-stamp (tzc-convert-org-time-stamp org-time-stamp-with-zoneinfo to-zone))
+				     nil t nil nil tzc-org-local-time-zone))
+	 ;; Add zoneinfo to the timestamp
+	 (org-timestamp-with-zoneinfo (concat (string-replace ">" (concat " " from-zone) org-timestamp) ">"))
+	 ;; Convert the timestamp using tzc
+	 (converted-timestamp (tzc-convert-org-timestamp org-timestamp-with-zoneinfo to-zone))
 	 (ts))
     
     (setq ts (cond ((string-equal schedule-or-deadline "SCHEDULED") (tzc-org--get-planning-ts :scheduled))
@@ -73,15 +73,15 @@ SCHEDULE-OR-DEADLINE can be SCHEDULED or DEADLINE."
 	(progn
 	  (goto-char (nth 1 ts))
 	  (delete-region (nth 1 ts) (nth 2 ts))
-	  (insert converted-time-stamp " "))
+	  (insert converted-timestamp " "))
       (org-back-to-heading t)
       (forward-line 1)
-      (insert (format "%s: " schedule-or-deadline) converted-time-stamp " "))))
+      (insert (format "%s: " schedule-or-deadline) converted-timestamp " "))))
 
 ;;;###autoload
 (defun tzc-org-schedule ()
-  "Schedule an org item with timezone conversion.
-Similar to `org-schedule', but prompts for timezone conversion.
+  "Schedule an org item with time zone conversion.
+Similar to `org-schedule', but prompts for time zone conversion.
 Prompts for date and time first, then asks for from-zone and to-zone,
 converts the time, and inserts the result with the to-zone in the timestamp.
 Optional argument ARG."
@@ -90,8 +90,8 @@ Optional argument ARG."
 
 ;;;###autoload
 (defun tzc-org-deadline ()
-  "Schedule an org item with timezone conversion.
-Similar to `org-deadline', but prompts for timezone conversion.
+  "Schedule an org item with time zone conversion.
+Similar to `org-deadline', but prompts for time zone conversion.
 Prompts for date and time first, then asks for from-zone and to-zone,
 converts the time, and inserts the result with the to-zone in the timestamp.
 Optional argument ARG."
@@ -107,7 +107,7 @@ Optional argument ARG."
     (kill-buffer tzc-world-clock-buffer-name))
   (let* ((timestamp (nth 0 (tzc--get-timestamp-at-point))))
     (tzc-world-clock (org-time-string-to-time timestamp)
-		     (plist-get (tzc--get-time-zone-from-time-stamp timestamp) :tz))))
+		     (plist-get (tzc--get-time-zone-from-timestamp timestamp) :tz))))
 
 (transient-define-prefix tzc-org-timestamp-dispatch ()
   "TZC operations for Org timestamp at point."
@@ -115,11 +115,11 @@ Optional argument ARG."
    (lambda () (format "TZC: %s" (nth 0 (tzc--get-timestamp-at-point))))
 
    ["Convert"
-    ("c" "Convert (keep original)" tzc-convert-org-time-stamp-at-mark)
-    ("r" "Convert (replace)" tzc-convert-and-replace-org-time-stamp-at-mark)]
+    ("c" "Convert (keep original)" tzc-convert-org-timestamp-at-mark)
+    ("r" "Convert (replace)" tzc-convert-and-replace-org-timestamp-at-mark)]
 
-   ["Timezone"
-    ("m" "modify (add or update) timezone" tzc-add-or-update-time-zone-in-time-stamp-at-point)]
+   ["Time Zone"
+    ("m" "modify (add or update) time zone" tzc-add-or-update-time-zone-in-timestamp-at-point)]
 
    ["Schedule"
     ("s" "Schedule" tzc-org-schedule)
