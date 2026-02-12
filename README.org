@@ -42,6 +42,7 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
 #+END_SRC
 
 * Time zone manipulation of org timestamp
+#+begin_export html
 <p align="center">
   <video src="./screenshots/tzc_demo_r.mp4"
          autoplay
@@ -51,6 +52,7 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
          width="850">
   </video>
 </p>
+#+end_export html
 
 * How to use it
 ** Convert a time between time zones
