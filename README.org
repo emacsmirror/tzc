@@ -40,6 +40,10 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
 					 ("Asia/Shanghai" "Shanghai")
 					 ("Asia/Tokyo" "Tokyo")))
 #+END_SRC
+
+* Time zone manipulation of org timestamp
+#+html: <div> <img src="./screenshots/tzc_demo_r.gif"></div>
+
 * How to use it
 ** Convert a time between time zones
 To convert a given ~time~ from ~from-zone~ to ~to-zone~, use the interactive function ~tzc-convert-time~.
