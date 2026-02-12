@@ -137,6 +137,7 @@ Optional argument ARG."
     map)
   "Keymap for `tzc-org-mode'.")
 
+;;;###autoload
 (define-minor-mode tzc-org-mode
   "Minor mode for TZC org features."
   :lighter " TZC"
