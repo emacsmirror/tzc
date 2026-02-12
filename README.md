@@ -132,9 +132,7 @@ Seamlessly replace times in your buffer with converted values—perfect for upda
 Transform Org mode time stamps between different time zones while preserving the Org format.
 
 <div align="center">
-  <video width="600" autoplay loop muted>
-    <source src="./screenshots/tzc_demo_r.mp4" type="video/mp4">
-  </video>
+  <img src="./screenshots/tzc_demo_r.gif" alt="World clock" width="600">
 </div>
 
 **Usage**: With your cursor on an Org time stamp, call `M-x tzc-org-timestamp-dispatch`
