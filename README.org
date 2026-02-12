@@ -44,7 +44,7 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
 * Time zone manipulation of org timestamp
 #+begin_export html
 <p align="center">
-  <video src="./screenshots/tzc_demo_r.mp4"
+  <video src="screenshots/tzc_demo_r.mp4"
          autoplay
          muted
          loop
