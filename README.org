@@ -52,7 +52,7 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
          width="850">
   </video>
 </p>
-#+end_export html
+#+end_export
 
 * How to use it
 ** Convert a time between time zones
