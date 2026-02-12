@@ -42,11 +42,7 @@ You can customize ~tzc-favourite-time-zones-alist~ to set your favourite ~time-z
 #+END_SRC
 
 * Time zone manipulation of org timestamp
-#+begin_export html
-<p align="center">
-<div> <img src="./screenshots/tzc_demo_r.gif"></div>
-</p>
-#+end_export
+#+html: <div> <img src="./screenshots/tzc_demo_r.gif"></div>
 
 * How to use it
 ** Convert a time between time zones
